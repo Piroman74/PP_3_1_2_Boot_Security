@@ -1,32 +1,57 @@
 package ru.kata.spring.boot_security.demo.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import ru.kata.spring.boot_security.demo.models.User;
+import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
+import ru.kata.spring.boot_security.demo.service.UserServiceImpl;
 import java.security.Principal;
 
 @Controller
 public class UserController {
 
-    private UserService userService;
+    private final UserService userService;
+    private final RoleService roleService;
 
     @Autowired
-    public void setUserService(UserService userService) {
+    public UserController(UserServiceImpl userService, RoleService roleService) {
         this.userService = userService;
+        this.roleService = roleService;
     }
 
-    @GetMapping("/")
-    public String homePage() {
-        return "redirect:/admin";
-    }
-
-    @GetMapping("/user")
-    public String getPrincipal(Principal principal, Model model) {
-        User user = userService.findByUsername(principal.getName());
+    @GetMapping("/user/my")
+    public String getUser(@AuthenticationPrincipal User user, Model model) {
         model.addAttribute("users", user);
-        return "user";
+        return "user-list";
     }
+
+    @GetMapping("/user/user-delete/{id}")
+    public String deleteUser(@PathVariable("id") Long id) {
+        userService.deleteById(id);
+        return "redirect:/login";
+    }
+
+
+    @GetMapping("/user/my-update/{id}")
+    public String updateUserForm(@PathVariable("id") Long id, Model model) {
+        User user = userService.findById(id);
+        model.addAttribute("user", user);
+        return "user-update";
+    }
+
+    @PostMapping("/user/my-update")
+    public String updateUser(User user,
+                             @RequestParam(value = "rolesId") String[] roles) {
+        userService.saveUser(user);
+        return "redirect:/user/my";
+    }
+
 }
+
